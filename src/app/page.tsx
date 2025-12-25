@@ -1,647 +1,519 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Play, Info, X, Star, Plus, Check, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
+import { useState } from "react";
+import { CreditCard, Shield, CheckCircle, ArrowRight, Lock, Zap, Globe, TrendingUp, Users, DollarSign, BarChart3, Wallet } from "lucide-react";
 
 // Tipos
-interface Movie {
+interface Plan {
   id: number;
-  title: string;
-  description: string;
-  image: string;
-  category: string;
-  rating: number;
-  year: number;
-  duration: string;
-  cast: string[];
-  synopsis: string;
-  genre: string[];
+  name: string;
+  price: string;
+  period: string;
+  features: string[];
+  popular?: boolean;
 }
 
-// Dados fictícios de filmes expandidos
-const moviesData: Movie[] = [
+interface PaymentMethod {
+  id: string;
+  name: string;
+  icon: string;
+}
+
+const plans: Plan[] = [
   {
     id: 1,
-    title: "Aventura Espacial",
-    description: "Uma jornada épica através das estrelas",
-    image: "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=800&h=450&fit=crop",
-    category: "Ação",
-    rating: 4.5,
-    year: 2023,
-    duration: "2h 15min",
-    cast: ["John Smith", "Maria Silva", "Carlos Santos"],
-    synopsis: "Em um futuro distante, uma equipe de exploradores embarca em uma missão perigosa para salvar a humanidade. Com efeitos visuais impressionantes e uma história emocionante, este filme redefine o gênero de ficção científica.",
-    genre: ["Ficção Científica", "Aventura", "Ação"]
+    name: "Starter",
+    price: "R$ 29",
+    period: "/mês",
+    features: [
+      "Até 100 transações/mês",
+      "Taxa de 3,5% por transação",
+      "Suporte por email",
+      "Dashboard básico",
+      "API de integração"
+    ]
   },
   {
     id: 2,
-    title: "Mistério na Cidade",
-    description: "Um detetive investiga crimes inexplicáveis",
-    image: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=800&h=450&fit=crop",
-    category: "Suspense",
-    rating: 4.2,
-    year: 2023,
-    duration: "1h 55min",
-    cast: ["Ana Costa", "Pedro Lima", "Julia Mendes"],
-    synopsis: "Um detetive brilhante precisa desvendar uma série de crimes que desafiam toda lógica. Cada pista leva a mais mistérios em uma trama cheia de reviravoltas.",
-    genre: ["Suspense", "Mistério", "Crime"]
+    name: "Professional",
+    price: "R$ 99",
+    period: "/mês",
+    features: [
+      "Até 1.000 transações/mês",
+      "Taxa de 2,5% por transação",
+      "Suporte prioritário 24/7",
+      "Dashboard avançado",
+      "API completa",
+      "Webhooks personalizados",
+      "Relatórios detalhados"
+    ],
+    popular: true
   },
   {
     id: 3,
-    title: "Comédia do Verão",
-    description: "Risadas garantidas nesta aventura hilária",
-    image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&h=450&fit=crop",
-    category: "Comédia",
-    rating: 4.0,
-    year: 2024,
-    duration: "1h 40min",
-    cast: ["Roberto Gomes", "Fernanda Souza", "Lucas Alves"],
-    synopsis: "Um grupo de amigos decide fazer uma viagem de verão que se transforma em uma série de situações hilárias e inesquecíveis.",
-    genre: ["Comédia", "Aventura"]
-  },
-  {
-    id: 4,
-    title: "Romance de Outono",
-    description: "Uma história de amor inesquecível",
-    image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&h=450&fit=crop",
-    category: "Romance",
-    rating: 4.7,
-    year: 2023,
-    duration: "2h 05min",
-    cast: ["Isabella Martins", "Gabriel Rocha", "Sofia Dias"],
-    synopsis: "Dois estranhos se encontram por acaso em uma pequena cidade e descobrem que o amor pode surgir nos momentos mais inesqurados.",
-    genre: ["Romance", "Drama"]
-  },
-  {
-    id: 5,
-    title: "Terror na Floresta",
-    description: "Prepare-se para uma experiência aterrorizante",
-    image: "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=800&h=450&fit=crop",
-    category: "Terror",
-    rating: 3.8,
-    year: 2024,
-    duration: "1h 30min",
-    cast: ["Rafael Santos", "Camila Oliveira", "Bruno Costa"],
-    synopsis: "Um grupo de amigos acampa em uma floresta isolada e descobre que não estão sozinhos. O terror se intensifica a cada minuto.",
-    genre: ["Terror", "Suspense"]
-  },
-  {
-    id: 6,
-    title: "Documentário Natureza",
-    description: "Explore as maravilhas do nosso planeta",
-    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=450&fit=crop",
-    category: "Documentário",
-    rating: 4.9,
-    year: 2023,
-    duration: "1h 50min",
-    cast: ["Narrador: David Attenborough"],
-    synopsis: "Uma jornada visual impressionante pelos ecossistemas mais incríveis da Terra, revelando a beleza e fragilidade da natureza.",
-    genre: ["Documentário", "Natureza"]
-  },
-  {
-    id: 7,
-    title: "Corrida Mortal",
-    description: "Velocidade e adrenalina em cada curva",
-    image: "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=450&fit=crop",
-    category: "Ação",
-    rating: 4.3,
-    year: 2024,
-    duration: "2h 00min",
-    cast: ["Marcus Vieira", "Leticia Campos", "Diego Ferreira"],
-    synopsis: "Um piloto talentoso precisa vencer a corrida mais perigosa do mundo para salvar sua família. Ação e emoção do início ao fim.",
-    genre: ["Ação", "Suspense", "Corrida"]
-  },
-  {
-    id: 8,
-    title: "Enigma do Passado",
-    description: "Segredos enterrados voltam à tona",
-    image: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&h=450&fit=crop",
-    category: "Suspense",
-    rating: 4.4,
-    year: 2023,
-    duration: "2h 10min",
-    cast: ["Patricia Almeida", "Ricardo Nunes", "Amanda Silva"],
-    synopsis: "Uma jornalista investiga um caso antigo e descobre uma conspiração que pode mudar tudo o que ela conhece sobre sua própria história.",
-    genre: ["Suspense", "Mistério", "Drama"]
-  },
-  {
-    id: 9,
-    title: "Heróis da Galáxia",
-    description: "A última esperança da humanidade",
-    image: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&h=450&fit=crop",
-    category: "Ação",
-    rating: 4.6,
-    year: 2024,
-    duration: "2h 30min",
-    cast: ["Chris Evans", "Scarlett Johnson", "Tom Hardy"],
-    synopsis: "Quando alienígenas ameaçam destruir a Terra, um grupo improvável de heróis deve se unir para salvar o planeta.",
-    genre: ["Ação", "Ficção Científica", "Aventura"]
-  },
-  {
-    id: 10,
-    title: "Amor em Paris",
-    description: "Encontre o amor na cidade luz",
-    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=450&fit=crop",
-    category: "Romance",
-    rating: 4.5,
-    year: 2023,
-    duration: "1h 50min",
-    cast: ["Emma Stone", "Ryan Gosling", "Marion Cotillard"],
-    synopsis: "Uma artista americana se muda para Paris e encontra o amor de forma inesperada enquanto persegue seus sonhos.",
-    genre: ["Romance", "Drama", "Comédia"]
-  },
-  {
-    id: 11,
-    title: "Risadas Garantidas",
-    description: "A comédia mais engraçada do ano",
-    image: "https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=800&h=450&fit=crop",
-    category: "Comédia",
-    rating: 4.1,
-    year: 2024,
-    duration: "1h 35min",
-    cast: ["Kevin Hart", "Tiffany Haddish", "Ice Cube"],
-    synopsis: "Situações hilárias acontecem quando um grupo de amigos decide abrir um negócio juntos sem experiência alguma.",
-    genre: ["Comédia"]
-  },
-  {
-    id: 12,
-    title: "A Mansão Assombrada",
-    description: "Nem todos sobreviverão à noite",
-    image: "https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=800&h=450&fit=crop",
-    category: "Terror",
-    rating: 4.0,
-    year: 2024,
-    duration: "1h 45min",
-    cast: ["Vera Farmiga", "Patrick Wilson", "Madison Wolfe"],
-    synopsis: "Uma família se muda para uma mansão antiga e logo descobre que ela esconde segredos sombrios e presenças sobrenaturais.",
-    genre: ["Terror", "Sobrenatural"]
+    name: "Enterprise",
+    price: "R$ 299",
+    period: "/mês",
+    features: [
+      "Transações ilimitadas",
+      "Taxa de 1,9% por transação",
+      "Gerente de conta dedicado",
+      "Dashboard premium",
+      "API completa + SDK",
+      "Webhooks avançados",
+      "Análises em tempo real",
+      "Integração personalizada",
+      "SLA garantido"
+    ]
   }
 ];
 
+const paymentMethods: PaymentMethod[] = [
+  { id: "credit", name: "Cartão de Crédito", icon: "💳" },
+  { id: "debit", name: "Cartão de Débito", icon: "💳" },
+  { id: "pix", name: "PIX", icon: "⚡" },
+  { id: "boleto", name: "Boleto", icon: "📄" }
+];
+
 export default function Home() {
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [favorites, setFavorites] = useState<number[]>([]);
-  const [muted, setMuted] = useState(true);
-  const [scrollPositions, setScrollPositions] = useState<{ [key: string]: number }>({});
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    cardNumber: "",
+    expiry: "",
+    cvv: "",
+    cpf: ""
+  });
 
-  // Carregar favoritos do localStorage
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem("streamflix-favorites");
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
-  }, []);
-
-  // Salvar favoritos no localStorage
-  const toggleFavorite = (movieId: number) => {
-    const newFavorites = favorites.includes(movieId)
-      ? favorites.filter(id => id !== movieId)
-      : [...favorites, movieId];
-    
-    setFavorites(newFavorites);
-    localStorage.setItem("streamflix-favorites", JSON.stringify(newFavorites));
+  const handlePlanSelect = (plan: Plan) => {
+    setSelectedPlan(plan);
+    setShowCheckout(true);
   };
 
-  // Categorias disponíveis
-  const categories = ["Ação", "Suspense", "Comédia", "Romance", "Terror", "Documentário"];
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
-  // Filme em destaque (primeiro da lista)
-  const featuredMovie = moviesData[0];
-
-  // Função para scroll horizontal
-  const scroll = (category: string, direction: 'left' | 'right') => {
-    const container = document.getElementById(`scroll-${category}`);
-    if (container) {
-      const scrollAmount = direction === 'left' ? -400 : 400;
-      container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert(`Pagamento processado com sucesso! Plano ${selectedPlan?.name} ativado.`);
+    setShowCheckout(false);
+    setSelectedPlan(null);
+    setFormData({
+      name: "",
+      email: "",
+      cardNumber: "",
+      expiry: "",
+      cvv: "",
+      cpf: ""
+    });
   };
 
   return (
-    <div className="min-h-screen bg-[#141414] text-white">
-      {/* Header/Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-gradient-to-b from-black/90 via-black/50 to-transparent">
-        <nav className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between">
-          <div className="flex items-center gap-6 sm:gap-10">
-            <h1 className="text-[#E50914] text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
-              STREAMFLIX
-            </h1>
-            <div className="hidden lg:flex gap-6 text-sm">
-              <button className="text-white hover:text-gray-300 transition-colors font-medium">
-                Início
-              </button>
-              <button className="text-gray-400 hover:text-white transition-colors">
-                Séries
-              </button>
-              <button className="text-gray-400 hover:text-white transition-colors">
-                Filmes
-              </button>
-              <button className="text-gray-400 hover:text-white transition-colors">
-                Bombando
-              </button>
-              <button className="text-gray-400 hover:text-white transition-colors">
-                Minha Lista
-              </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-lg border-b border-white/10">
+        <nav className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+              <Wallet className="w-6 h-6 text-white" />
             </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white">
+              PayFlow
+            </h1>
           </div>
           
-          <div className="flex items-center gap-4">
-            <button className="text-gray-300 hover:text-white transition-colors">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#features" className="text-gray-300 hover:text-white transition-colors">
+              Recursos
+            </a>
+            <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">
+              Preços
+            </a>
+            <a href="#contact" className="text-gray-300 hover:text-white transition-colors">
+              Contato
+            </a>
           </div>
+
+          <button className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all">
+            Entrar
+          </button>
         </nav>
       </header>
 
-      {/* Hero Banner */}
-      <section className="relative h-[85vh] sm:h-[90vh] flex items-center">
-        <div className="absolute inset-0">
-          <img 
-            src={featuredMovie.image} 
-            alt={featuredMovie.title}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#141414] via-transparent to-transparent" />
-        </div>
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-4 sm:px-6">
+        <div className="container mx-auto text-center max-w-5xl">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 text-sm font-semibold mb-8">
+            <Zap className="w-4 h-4" />
+            Plataforma de Pagamentos Moderna
+          </div>
 
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="max-w-xl lg:max-w-2xl space-y-4 sm:space-y-6">
-            <div className="flex items-center gap-2 text-xs sm:text-sm">
-              <span className="px-2 py-1 bg-[#E50914] text-white font-bold rounded">
-                N
-              </span>
-              <span className="text-gray-300 uppercase tracking-wider font-semibold">
-                Filme Original
-              </span>
-            </div>
-            
-            <h2 className="text-4xl sm:text-5xl lg:text-7xl font-black leading-tight">
-              {featuredMovie.title}
-            </h2>
-            
-            <div className="flex items-center gap-4 text-sm sm:text-base">
-              <span className="flex items-center gap-1 text-green-400 font-bold">
-                <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                {featuredMovie.rating}
-              </span>
-              <span className="text-gray-300">{featuredMovie.year}</span>
-              <span className="px-2 py-0.5 border border-gray-500 text-gray-400 text-xs">
-                {featuredMovie.category}
-              </span>
-              <span className="text-gray-400">{featuredMovie.duration}</span>
-            </div>
+          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white mb-6 leading-tight">
+            Aceite Pagamentos
+            <span className="block bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              De Forma Simples
+            </span>
+          </h1>
 
-            <p className="text-base sm:text-lg lg:text-xl text-gray-200 leading-relaxed line-clamp-3 sm:line-clamp-4">
-              {featuredMovie.synopsis}
-            </p>
-            
-            <div className="flex flex-wrap gap-3 sm:gap-4 pt-2">
-              <button 
-                onClick={() => setSelectedMovie(featuredMovie)}
-                className="flex items-center gap-2 sm:gap-3 bg-white text-black px-6 sm:px-10 py-2.5 sm:py-3.5 rounded-md font-bold text-base sm:text-lg hover:bg-gray-200 transition-all transform hover:scale-105 shadow-xl"
-              >
-                <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
-                Assistir
-              </button>
-              <button 
-                onClick={() => setSelectedMovie(featuredMovie)}
-                className="flex items-center gap-2 sm:gap-3 bg-gray-500/70 backdrop-blur-sm text-white px-6 sm:px-10 py-2.5 sm:py-3.5 rounded-md font-bold text-base sm:text-lg hover:bg-gray-500/90 transition-all shadow-xl"
-              >
-                <Info className="w-5 h-5 sm:w-6 sm:h-6" />
-                Mais Informações
-              </button>
+          <p className="text-lg sm:text-xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed">
+            Integre pagamentos em minutos. API moderna, taxas competitivas e suporte 24/7. 
+            Aceite cartões, PIX, boleto e muito mais.
+          </p>
+
+          <div className="flex flex-wrap gap-4 justify-center">
+            <button 
+              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+              className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/50 transition-all transform hover:scale-105"
+            >
+              Começar Agora
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <button className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl font-bold text-lg hover:bg-white/20 transition-all border border-white/20">
+              Ver Documentação
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="text-3xl sm:text-4xl font-black text-white mb-2">99.9%</div>
+              <div className="text-gray-400 text-sm">Uptime</div>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="text-3xl sm:text-4xl font-black text-white mb-2">50k+</div>
+              <div className="text-gray-400 text-sm">Empresas</div>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="text-3xl sm:text-4xl font-black text-white mb-2">R$ 2B</div>
+              <div className="text-gray-400 text-sm">Processado</div>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="text-3xl sm:text-4xl font-black text-white mb-2">24/7</div>
+              <div className="text-gray-400 text-sm">Suporte</div>
             </div>
           </div>
         </div>
-
-        {/* Mute Button */}
-        <button
-          onClick={() => setMuted(!muted)}
-          className="absolute bottom-24 sm:bottom-32 right-4 sm:right-8 p-2 sm:p-3 border-2 border-gray-500 rounded-full hover:bg-gray-500/30 transition-all"
-        >
-          {muted ? <VolumeX className="w-5 h-5 sm:w-6 sm:h-6" /> : <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />}
-        </button>
       </section>
 
-      {/* Movies Sections with Horizontal Scroll */}
-      <section className="relative z-20 -mt-16 sm:-mt-24 lg:-mt-32 space-y-8 sm:space-y-12 pb-12 sm:pb-20">
-        {categories.map((category) => {
-          const categoryMovies = moviesData.filter(movie => movie.category === category);
-          
-          return (
-            <div key={category} className="space-y-3 sm:space-y-4">
-              <div className="container mx-auto px-4 sm:px-6">
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
-                  {category}
-                </h3>
-              </div>
-              
-              <div className="relative group">
-                {/* Scroll Left Button */}
-                <button
-                  onClick={() => scroll(category, 'left')}
-                  className="absolute left-0 top-0 bottom-0 z-30 w-12 sm:w-16 bg-gradient-to-r from-[#141414] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
-                >
-                  <ChevronLeft className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-lg" />
-                </button>
+      {/* Features Section */}
+      <section id="features" className="py-20 px-4 sm:px-6">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-4">
+              Por que escolher o PayFlow?
+            </h2>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Tecnologia de ponta para processar pagamentos com segurança e eficiência
+            </p>
+          </div>
 
-                {/* Movies Container */}
-                <div
-                  id={`scroll-${category}`}
-                  className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide px-4 sm:px-6 scroll-smooth"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
-                  {categoryMovies.map((movie) => (
-                    <div
-                      key={movie.id}
-                      onClick={() => setSelectedMovie(movie)}
-                      className="flex-shrink-0 w-[45vw] sm:w-[30vw] md:w-[23vw] lg:w-[18vw] xl:w-[15vw] group/card cursor-pointer"
-                    >
-                      <div className="relative aspect-video rounded-md overflow-hidden bg-gray-900 transform transition-all duration-300 group-hover/card:scale-110 group-hover/card:z-20 group-hover/card:shadow-2xl">
-                        <img 
-                          src={movie.image} 
-                          alt={movie.title}
-                          className="w-full h-full object-cover"
-                        />
-                        
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
-                          <div className="absolute inset-0 flex flex-col justify-end p-3 sm:p-4">
-                            <h4 className="font-bold text-sm sm:text-base mb-2 line-clamp-1">
-                              {movie.title}
-                            </h4>
-                            
-                            <div className="flex items-center gap-2 mb-3">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedMovie(movie);
-                                }}
-                                className="p-1.5 sm:p-2 bg-white rounded-full hover:bg-gray-200 transition-colors"
-                              >
-                                <Play className="w-3 h-3 sm:w-4 sm:h-4 text-black fill-current" />
-                              </button>
-                              
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleFavorite(movie.id);
-                                }}
-                                className="p-1.5 sm:p-2 border-2 border-gray-400 rounded-full hover:border-white transition-colors"
-                              >
-                                {favorites.includes(movie.id) ? (
-                                  <Check className="w-3 h-3 sm:w-4 sm:h-4" />
-                                ) : (
-                                  <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                                )}
-                              </button>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="flex items-center gap-1 text-green-400 font-semibold">
-                                <Star className="w-3 h-3 fill-current" />
-                                {movie.rating}
-                              </span>
-                              <span className="text-gray-400">{movie.year}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all group">
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Shield className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Segurança Máxima</h3>
+              <p className="text-gray-400 leading-relaxed">
+                Certificação PCI-DSS Level 1 e criptografia de ponta a ponta para proteger todas as transações.
+              </p>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all group">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Zap className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Integração Rápida</h3>
+              <p className="text-gray-400 leading-relaxed">
+                API RESTful moderna e SDKs para todas as linguagens. Comece a aceitar pagamentos em minutos.
+              </p>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all group">
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Globe className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Global</h3>
+              <p className="text-gray-400 leading-relaxed">
+                Aceite pagamentos de mais de 135 países com suporte a múltiplas moedas.
+              </p>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all group">
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <TrendingUp className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Analytics Avançado</h3>
+              <p className="text-gray-400 leading-relaxed">
+                Dashboard completo com métricas em tempo real e relatórios detalhados de vendas.
+              </p>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all group">
+              <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Suporte Dedicado</h3>
+              <p className="text-gray-400 leading-relaxed">
+                Equipe especializada disponível 24/7 para ajudar você e seus clientes.
+              </p>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all group">
+              <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-purple-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <DollarSign className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Taxas Competitivas</h3>
+              <p className="text-gray-400 leading-relaxed">
+                As menores taxas do mercado sem custos ocultos. Você paga apenas pelo que usar.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 px-4 sm:px-6">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-4">
+              Planos para todos os tamanhos
+            </h2>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Escolha o plano ideal para o seu negócio. Sem taxas de setup ou mensalidades escondidas.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {plans.map((plan) => (
+              <div
+                key={plan.id}
+                className={`relative bg-white/5 backdrop-blur-sm border rounded-3xl p-8 hover:bg-white/10 transition-all ${
+                  plan.popular
+                    ? "border-purple-500 shadow-2xl shadow-purple-500/20 scale-105"
+                    : "border-white/10"
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-bold rounded-full">
+                    Mais Popular
+                  </div>
+                )}
+
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                  <div className="flex items-baseline justify-center gap-1 mb-4">
+                    <span className="text-5xl font-black text-white">{plan.price}</span>
+                    <span className="text-gray-400">{plan.period}</span>
+                  </div>
                 </div>
 
-                {/* Scroll Right Button */}
+                <ul className="space-y-4 mb-8">
+                  {plan.features.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300 text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
                 <button
-                  onClick={() => scroll(category, 'right')}
-                  className="absolute right-0 top-0 bottom-0 z-30 w-12 sm:w-16 bg-gradient-to-l from-[#141414] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
+                  onClick={() => handlePlanSelect(plan)}
+                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
+                    plan.popular
+                      ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-xl hover:shadow-purple-500/50"
+                      : "bg-white/10 text-white hover:bg-white/20 border border-white/20"
+                  }`}
                 >
-                  <ChevronRight className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-lg" />
+                  Começar Agora
                 </button>
               </div>
-            </div>
-          );
-        })}
-
-        {/* Minha Lista Section */}
-        {favorites.length > 0 && (
-          <div className="space-y-3 sm:space-y-4">
-            <div className="container mx-auto px-4 sm:px-6">
-              <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
-                Minha Lista
-              </h3>
-            </div>
-            
-            <div className="relative group">
-              <div
-                id="scroll-favorites"
-                className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide px-4 sm:px-6 scroll-smooth"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {moviesData
-                  .filter(movie => favorites.includes(movie.id))
-                  .map((movie) => (
-                    <div
-                      key={movie.id}
-                      onClick={() => setSelectedMovie(movie)}
-                      className="flex-shrink-0 w-[45vw] sm:w-[30vw] md:w-[23vw] lg:w-[18vw] xl:w-[15vw] group/card cursor-pointer"
-                    >
-                      <div className="relative aspect-video rounded-md overflow-hidden bg-gray-900 transform transition-all duration-300 group-hover/card:scale-110 group-hover/card:z-20 group-hover/card:shadow-2xl">
-                        <img 
-                          src={movie.image} 
-                          alt={movie.title}
-                          className="w-full h-full object-cover"
-                        />
-                        
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
-                          <div className="absolute inset-0 flex flex-col justify-end p-3 sm:p-4">
-                            <h4 className="font-bold text-sm sm:text-base mb-2 line-clamp-1">
-                              {movie.title}
-                            </h4>
-                            
-                            <div className="flex items-center gap-2 mb-3">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedMovie(movie);
-                                }}
-                                className="p-1.5 sm:p-2 bg-white rounded-full hover:bg-gray-200 transition-colors"
-                              >
-                                <Play className="w-3 h-3 sm:w-4 sm:h-4 text-black fill-current" />
-                              </button>
-                              
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleFavorite(movie.id);
-                                }}
-                                className="p-1.5 sm:p-2 border-2 border-white rounded-full hover:border-gray-300 transition-colors"
-                              >
-                                <Check className="w-3 h-3 sm:w-4 sm:h-4" />
-                              </button>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="flex items-center gap-1 text-green-400 font-semibold">
-                                <Star className="w-3 h-3 fill-current" />
-                                {movie.rating}
-                              </span>
-                              <span className="text-gray-400">{movie.year}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
       </section>
 
-      {/* Modal de Detalhes */}
-      {selectedMovie && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-sm animate-in fade-in duration-300"
-          onClick={() => setSelectedMovie(null)}
+      {/* Checkout Modal */}
+      {showCheckout && selectedPlan && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setShowCheckout(false)}
         >
-          <div 
-            className="bg-[#181818] rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300 shadow-2xl"
+          <div
+            className="bg-slate-900 border border-white/10 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header do Modal */}
-            <div className="relative aspect-video">
-              <img 
-                src={selectedMovie.image} 
-                alt={selectedMovie.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#181818] via-transparent to-transparent" />
-              
-              <button
-                onClick={() => setSelectedMovie(null)}
-                className="absolute top-4 right-4 sm:top-6 sm:right-6 bg-[#181818] hover:bg-gray-800 rounded-full p-2 transition-colors z-10"
-              >
-                <X className="w-6 h-6" />
-              </button>
-              
-              <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-6">
-                  {selectedMovie.title}
-                </h2>
-                
-                <div className="flex flex-wrap gap-3 sm:gap-4">
-                  <button className="flex items-center gap-2 sm:gap-3 bg-white text-black px-6 sm:px-10 py-2.5 sm:py-3.5 rounded-md font-bold text-base sm:text-lg hover:bg-gray-200 transition-all transform hover:scale-105">
-                    <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
-                    Assistir
-                  </button>
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(selectedMovie.id);
-                    }}
-                    className={`flex items-center gap-2 sm:gap-3 px-6 sm:px-10 py-2.5 sm:py-3.5 rounded-md font-bold text-base sm:text-lg transition-all ${
-                      favorites.includes(selectedMovie.id)
-                        ? "bg-gray-700 text-white hover:bg-gray-600"
-                        : "bg-gray-600/80 text-white hover:bg-gray-600"
-                    }`}
-                  >
-                    {favorites.includes(selectedMovie.id) ? (
-                      <>
-                        <Check className="w-5 h-5 sm:w-6 sm:h-6" />
-                        Na Minha Lista
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
-                        Minha Lista
-                      </>
-                    )}
-                  </button>
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-3xl font-black text-white mb-2">Finalizar Pagamento</h2>
+                  <p className="text-gray-400">
+                    Plano {selectedPlan.name} - {selectedPlan.price}{selectedPlan.period}
+                  </p>
                 </div>
-              </div>
-            </div>
-
-            {/* Conteúdo do Modal */}
-            <div className="p-6 sm:p-10 space-y-6 sm:space-y-8">
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm sm:text-base">
-                <span className="flex items-center gap-1.5 text-green-400 font-bold text-lg">
-                  <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
-                  {selectedMovie.rating} / 5.0
-                </span>
-                <span className="text-white font-semibold">{selectedMovie.year}</span>
-                <span className="text-gray-400">{selectedMovie.duration}</span>
-                <span className="px-3 py-1 border-2 border-gray-600 rounded text-gray-300 text-xs sm:text-sm font-semibold">
-                  {selectedMovie.category}
-                </span>
+                <button
+                  onClick={() => setShowCheckout(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
-                <div className="md:col-span-2 space-y-4 sm:space-y-6">
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-bold mb-3">Sinopse</h3>
-                    <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-                      {selectedMovie.synopsis}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-bold mb-3">Elenco</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedMovie.cast.map((actor, index) => (
-                        <span 
-                          key={index}
-                          className="px-4 py-2 bg-gray-800 rounded-full text-sm text-gray-200 hover:bg-gray-700 transition-colors"
-                        >
-                          {actor}
-                        </span>
-                      ))}
-                    </div>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Payment Methods */}
+                <div>
+                  <label className="block text-white font-semibold mb-4">
+                    Método de Pagamento
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {paymentMethods.map((method) => (
+                      <button
+                        key={method.id}
+                        type="button"
+                        onClick={() => setSelectedPaymentMethod(method.id)}
+                        className={`p-4 rounded-xl border-2 transition-all ${
+                          selectedPaymentMethod === method.id
+                            ? "border-purple-500 bg-purple-500/10"
+                            : "border-white/10 bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        <div className="text-3xl mb-2">{method.icon}</div>
+                        <div className="text-white text-sm font-semibold">{method.name}</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
+                {/* Form Fields */}
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm text-gray-400 mb-2">Gêneros</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedMovie.genre.map((g, index) => (
-                        <span 
-                          key={index}
-                          className="text-sm text-white"
-                        >
-                          {g}{index < selectedMovie.genre.length - 1 ? "," : ""}
-                        </span>
-                      ))}
-                    </div>
+                    <label className="block text-white font-semibold mb-2">Nome Completo</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                      placeholder="João Silva"
+                    />
                   </div>
-                  
+
                   <div>
-                    <h4 className="text-sm text-gray-400 mb-2">Classificação</h4>
-                    <span className="px-3 py-1 border-2 border-gray-600 rounded text-white text-sm font-semibold inline-block">
-                      16+
-                    </span>
+                    <label className="block text-white font-semibold mb-2">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                      placeholder="joao@exemplo.com"
+                    />
                   </div>
+
+                  <div>
+                    <label className="block text-white font-semibold mb-2">CPF</label>
+                    <input
+                      type="text"
+                      name="cpf"
+                      value={formData.cpf}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                      placeholder="000.000.000-00"
+                    />
+                  </div>
+
+                  {selectedPaymentMethod === "credit" || selectedPaymentMethod === "debit" ? (
+                    <>
+                      <div>
+                        <label className="block text-white font-semibold mb-2">
+                          Número do Cartão
+                        </label>
+                        <input
+                          type="text"
+                          name="cardNumber"
+                          value={formData.cardNumber}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                          placeholder="0000 0000 0000 0000"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-white font-semibold mb-2">Validade</label>
+                          <input
+                            type="text"
+                            name="expiry"
+                            value={formData.expiry}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                            placeholder="MM/AA"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white font-semibold mb-2">CVV</label>
+                          <input
+                            type="text"
+                            name="cvv"
+                            value={formData.cvv}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                            placeholder="123"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
-              </div>
+
+                {/* Security Badge */}
+                <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+                  <Lock className="w-5 h-5 text-green-400" />
+                  <p className="text-sm text-green-400">
+                    Pagamento 100% seguro e criptografado
+                  </p>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={!selectedPaymentMethod}
+                  className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Confirmar Pagamento
+                </button>
+              </form>
             </div>
           </div>
         </div>
       )}
 
-      {/* CSS para esconder scrollbar */}
-      <style jsx global>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+      {/* Footer */}
+      <footer className="py-12 px-4 sm:px-6 border-t border-white/10">
+        <div className="container mx-auto text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+              <Wallet className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-black text-white">PayFlow</span>
+          </div>
+          <p className="text-gray-400 text-sm">
+            © 2024 PayFlow. Todos os direitos reservados.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
